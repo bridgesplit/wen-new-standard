@@ -5,7 +5,7 @@ import {
 	Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionMessage, VersionedTransaction, sendAndConfirmTransaction,
 } from '@solana/web3.js';
 import {
-	getAddDistributionIx, getAddNftToGroupIx, getAddRoyaltiesIx, getAtaCreateIx, getClaimDistributionIx, getCreateGroupIx, getDistributionAccount, getDistributionAccountPda, getGroupAccount,
+	getAddDistributionIx, getAddNftToGroupIx, getAddRoyaltiesIx, getAtaCreateIx, getClaimDistributionIx, getCreateGroupIx, getDistributionAccount, getDistributionAccountPda, getDistributionProgram, getGroupAccount,
 	getGroupAccountPda,
 	getGroupMemberAccount,
 	getMintNftIx,
@@ -129,7 +129,6 @@ describe('e2e tests', () => {
 	});
 
 	let buyAmounts = 0;
-	const distributionAccountSize = 473;
 	let minRentExemption = 0;
 
 	test('purchase nft from 1', async () => {
@@ -156,7 +155,7 @@ describe('e2e tests', () => {
 		const txn = new Transaction().add(ataIx).add(approveIx).add(ix);
 		const txnId = await sendAndConfirmTransaction(setup.provider.connection, txn, [setup.payer, setup.user1]);
 		expect(txnId).toBeTruthy();
-		minRentExemption = await setup.provider.connection.getMinimumBalanceForRentExemption(distributionAccountSize);
+		minRentExemption = await setup.provider.connection.getMinimumBalanceForRentExemption(477);
 		const distributionAccount = await getDistributionAccount(setup.provider, groupMint, PublicKey.default.toString());
 		expect(distributionAccount?.claimData.map(d => ({address: d.address.toString(), claimAmount: d.claimAmount.toNumber()})))
 			.toStrictEqual([{
@@ -200,7 +199,7 @@ describe('e2e tests', () => {
 				claimAmount: ((buyAmounts * royaltyBasisPoints * 51) / (10000 * 100)),
 			}]);
 		const distributionBalance = await setup.provider.connection.getBalance(getDistributionAccountPda(groupMint, PublicKey.default.toString()));
-		expect(distributionBalance).toBe((buyAmounts * royaltyBasisPoints) / 10000);
+		expect(distributionBalance).toBe(((buyAmounts * royaltyBasisPoints) / 10000) + minRentExemption);
 	});
 
 	test('claim payer royalties', async () => {
@@ -220,10 +219,17 @@ describe('e2e tests', () => {
 		const payerBalanceAfter = await setup.provider.connection.getBalance(setup.payer.publicKey);
 		expect(payerBalanceAfter - payerBalanceBefore).toBe(((buyAmounts * royaltyBasisPoints * 49) / (10000 * 100)) - feeEstimation);
 		const distributionAccount = await getDistributionAccount(setup.provider, groupMint, PublicKey.default.toString());
-		expect(distributionAccount?.claimData).toBe([{
-			address: setup.authority.publicKey.toString(),
-			claimAmount: ((buyAmounts * royaltyBasisPoints * 51) / (10000 * 100)).toString(16),
-		}]);
+		expect(distributionAccount?.claimData.map(d => ({address: d.address.toString(), claimAmount: d.claimAmount.toNumber()})))
+			.toStrictEqual([
+				{
+					address: setup.payer.publicKey.toString(),
+					claimAmount: 0,
+				},
+				{
+					address: setup.authority.publicKey.toString(),
+					claimAmount: ((buyAmounts * royaltyBasisPoints * 51) / (10000 * 100)),
+				},
+			]);
 	});
 
 	test('claim authority royalties', async () => {
@@ -243,6 +249,18 @@ describe('e2e tests', () => {
 		const authorityBalanceAfter = await setup.provider.connection.getBalance(setup.authority.publicKey);
 		expect(authorityBalanceAfter - authorityBalanceBefore).toBe(((buyAmounts * royaltyBasisPoints * 51) / (10000 * 100)) - feeEstimation);
 		const distributionAccount = await getDistributionAccount(setup.provider, groupMint, PublicKey.default.toString());
-		expect(distributionAccount?.claimData).toBe([]);
+		expect(distributionAccount?.claimData.map(d => ({address: d.address.toString(), claimAmount: d.claimAmount.toNumber()})))
+			.toStrictEqual(
+				[
+					{
+						address: setup.payer.publicKey.toString(),
+						claimAmount: 0,
+					},
+					{
+						address: setup.authority.publicKey.toString(),
+						claimAmount: 0,
+					},
+				],
+			);
 	});
 });
