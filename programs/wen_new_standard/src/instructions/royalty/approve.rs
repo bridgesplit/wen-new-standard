@@ -20,7 +20,7 @@ use anchor_spl::{
 use wen_royalty_distribution::{
     cpi::{accounts::UpdateDistribution, update_distribution},
     program::WenRoyaltyDistribution,
-    CreatorShare, UpdateDistributionArgs,
+    UpdateDistributionArgs,
 };
 
 use crate::{ApproveAccount, APPROVE_ACCOUNT_SEED, ROYALTY_BASIS_POINTS_FIELD};
@@ -62,7 +62,7 @@ pub struct ApproveTransfer<'info> {
 }
 
 impl ApproveTransfer<'_> {
-    pub fn distribute_royalties(&self, creators: Vec<CreatorShare>, amount: u64) -> Result<()> {
+    pub fn distribute_royalties(&self, amount: u64) -> Result<()> {
         let cpi_accounts = UpdateDistribution {
             authority: self.authority.to_account_info(),
             distribution_account: self.distribution_account.to_account_info(),
@@ -77,7 +77,6 @@ impl ApproveTransfer<'_> {
             cpi_ctx,
             UpdateDistributionArgs {
                 amount,
-                creators,
                 payment_mint: self.payment_mint.to_account_info().key(),
             },
         )
@@ -103,22 +102,10 @@ pub fn handler(ctx: Context<ApproveTransfer>, amount: u64) -> Result<()> {
         .map(|value| u64::from_str(value).unwrap())
         .unwrap_or(0);
 
-    // get all creators from metadata Vec(String, String), only royalty_basis_points needs to be removed
-    let creators = metadata
-        .additional_metadata
-        .iter()
-        .filter(|(key, _)| key != ROYALTY_BASIS_POINTS_FIELD)
-        .map(|(key, value)| CreatorShare {
-            address: Pubkey::from_str(key).unwrap(),
-            pct: u8::from_str(value).unwrap(),
-        })
-        .collect::<Vec<CreatorShare>>();
-
     let royalty_amount = (amount * royalty_basis_points) / 10000;
 
     // transfer royalty amount to distribution pda
-    ctx.accounts
-        .distribute_royalties(creators, royalty_amount)?;
+    ctx.accounts.distribute_royalties(royalty_amount)?;
 
     Ok(())
 }
