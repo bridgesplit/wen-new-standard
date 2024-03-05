@@ -65,6 +65,7 @@ impl ApproveTransfer<'_> {
     pub fn distribute_royalties(&self, amount: u64) -> Result<()> {
         let cpi_accounts = UpdateDistribution {
             authority: self.authority.to_account_info(),
+            mint: self.mint.to_account_info(),
             distribution_account: self.distribution_account.to_account_info(),
             distribution_token_account: self.distribution_token_account.to_account_info(),
             authority_token_account: self.authority_token_account.to_account_info(),

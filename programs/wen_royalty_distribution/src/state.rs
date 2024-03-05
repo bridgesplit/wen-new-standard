@@ -8,6 +8,8 @@ pub struct Creator {
     pub claim_amount: u64,
 }
 
+pub const ROYALTY_BASIS_POINTS_FIELD: &str = "royalty_basis_points";
+
 #[account()]
 #[derive(InitSpace)]
 pub struct DistributionAccount {

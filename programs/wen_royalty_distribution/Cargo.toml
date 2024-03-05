@@ -23,8 +23,3 @@ anchor-spl = { git = "ssh://git@github.com/bridgesplit/anchor", features = ["tok
 spl-transfer-hook-interface = { version = "0.5.0" } 
 spl-tlv-account-resolution = "0.4.0"
 spl-pod = "0.1.0"
-
-[dev-dependencies.cargo-husky]
-version = "1"
-default-features = false # Disable features which are enabled by default
-features = ["precommit-hook", "run-cargo-fmt", "run-cargo-clippy"]

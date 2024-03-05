@@ -5,7 +5,7 @@ import {
 	Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionMessage, VersionedTransaction, sendAndConfirmTransaction,
 } from '@solana/web3.js';
 import {
-	getAddDistributionIx, getAddNftToGroupIx, getAddRoyaltiesIx, getAtaCreateIx, getClaimDistributionIx, getCreateGroupIx, getDistributionAccount, getGroupAccount,
+	getAddDistributionIx, getAddNftToGroupIx, getAddRoyaltiesIx, getAtaCreateIx, getClaimDistributionIx, getCreateGroupIx, getDistributionAccount, getDistributionAccountPda, getGroupAccount,
 	getGroupAccountPda,
 	getGroupMemberAccount,
 	getMintNftIx,
@@ -164,6 +164,8 @@ describe('e2e tests', () => {
 				address: setup.authority.publicKey.toString(),
 				claimAmount: (buyAmounts * royaltyBasisPoints * 51) / (10000 * 100),
 			}]);
+		const distributionBalance = await setup.provider.connection.getBalance(getDistributionAccountPda(groupMint, PublicKey.default.toString()));
+		expect(distributionBalance).toBe((buyAmounts * royaltyBasisPoints) / 10000);
 	});
 
 	test('purchase nft from 2', async () => {
@@ -194,6 +196,8 @@ describe('e2e tests', () => {
 				address: setup.authority.publicKey.toString(),
 				claimAmount: ((buyAmounts * royaltyBasisPoints * 51) / (10000 * 100)),
 			}]);
+		const distributionBalance = await setup.provider.connection.getBalance(getDistributionAccountPda(groupMint, PublicKey.default.toString()));
+		expect(distributionBalance).toBe((buyAmounts * royaltyBasisPoints) / 10000);
 	});
 
 	test('claim payer royalties', async () => {
