@@ -103,10 +103,8 @@ pub fn handler(ctx: Context<UpdateDistribution>, args: UpdateDistributionArgs) -
     // update creator amounts in distribution account. add creator if not present, else update amount (amount * pct / 100)
     let current_data = ctx.accounts.distribution_account.claim_data.clone();
     let mut new_data = vec![];
-    let mut pct_sum: u8 = 0;
     // Incoming creator updates
     for creator in creators.iter() {
-        pct_sum += creator.pct;
         let mut creator_found = false;
         for current_creator in current_data.iter() {
             if creator.address == current_creator.address {
@@ -140,6 +138,7 @@ pub fn handler(ctx: Context<UpdateDistribution>, args: UpdateDistributionArgs) -
             });
         }
     }
+    
     for orig_creator in current_data.iter() {
         let mut creator_found = false;
         for added_creator in new_data.iter() {
@@ -154,9 +153,6 @@ pub fn handler(ctx: Context<UpdateDistribution>, args: UpdateDistributionArgs) -
                 claim_amount: orig_creator.claim_amount,
             });
         }
-    }
-    if pct_sum != 100 {
-        return Err(DistributionErrors::InvalidCreatorPctAmount.into());
     }
     ctx.accounts.distribution_account.claim_data = new_data;
 

@@ -129,6 +129,8 @@ describe('e2e tests', () => {
 	});
 
 	let buyAmounts = 0;
+	const distributionAccountSize = 473;
+	let minRentExemption = 0;
 
 	test('purchase nft from 1', async () => {
 		const buyAmount = LAMPORTS_PER_SOL * 15;
@@ -154,6 +156,7 @@ describe('e2e tests', () => {
 		const txn = new Transaction().add(ataIx).add(approveIx).add(ix);
 		const txnId = await sendAndConfirmTransaction(setup.provider.connection, txn, [setup.payer, setup.user1]);
 		expect(txnId).toBeTruthy();
+		minRentExemption = await setup.provider.connection.getMinimumBalanceForRentExemption(distributionAccountSize);
 		const distributionAccount = await getDistributionAccount(setup.provider, groupMint, PublicKey.default.toString());
 		expect(distributionAccount?.claimData.map(d => ({address: d.address.toString(), claimAmount: d.claimAmount.toNumber()})))
 			.toStrictEqual([{
@@ -165,7 +168,7 @@ describe('e2e tests', () => {
 				claimAmount: (buyAmounts * royaltyBasisPoints * 51) / (10000 * 100),
 			}]);
 		const distributionBalance = await setup.provider.connection.getBalance(getDistributionAccountPda(groupMint, PublicKey.default.toString()));
-		expect(distributionBalance).toBe((buyAmounts * royaltyBasisPoints) / 10000);
+		expect(distributionBalance).toBe(((buyAmounts * royaltyBasisPoints) / 10000) + minRentExemption);
 	});
 
 	test('purchase nft from 2', async () => {
@@ -209,10 +212,13 @@ describe('e2e tests', () => {
 		const payerBalanceBefore = await setup.provider.connection.getBalance(setup.payer.publicKey);
 		const ix = await getClaimDistributionIx(setup.provider, args);
 		const txn = new Transaction().add(ix);
+		txn.feePayer = setup.payer.publicKey;
+		txn.recentBlockhash = await setup.provider.connection.getLatestBlockhash().then(res => res.blockhash);
+		const feeEstimation = (await txn.getEstimatedFee(setup.provider.connection))!;
 		const txnId = await sendAndConfirmTransaction(setup.provider.connection, txn, [setup.payer]);
 		expect(txnId).toBeTruthy();
 		const payerBalanceAfter = await setup.provider.connection.getBalance(setup.payer.publicKey);
-		expect(payerBalanceAfter - payerBalanceBefore).toBe(((buyAmounts * royaltyBasisPoints * 49) / (10000 * 100)) - 50000); // 50000 is the fee for the transaction
+		expect(payerBalanceAfter - payerBalanceBefore).toBe(((buyAmounts * royaltyBasisPoints * 49) / (10000 * 100)) - feeEstimation);
 		const distributionAccount = await getDistributionAccount(setup.provider, groupMint, PublicKey.default.toString());
 		expect(distributionAccount?.claimData).toBe([{
 			address: setup.authority.publicKey.toString(),
@@ -229,10 +235,13 @@ describe('e2e tests', () => {
 		const authorityBalanceBefore = await setup.provider.connection.getBalance(setup.authority.publicKey);
 		const ix = await getClaimDistributionIx(setup.provider, args);
 		const txn = new Transaction().add(ix);
+		txn.feePayer = setup.authority.publicKey;
+		txn.recentBlockhash = await setup.provider.connection.getLatestBlockhash().then(res => res.blockhash);
+		const feeEstimation = (await txn.getEstimatedFee(setup.provider.connection))!;
 		const txnId = await sendAndConfirmTransaction(setup.provider.connection, txn, [setup.authority]);
 		expect(txnId).toBeTruthy();
 		const authorityBalanceAfter = await setup.provider.connection.getBalance(setup.authority.publicKey);
-		expect(authorityBalanceAfter - authorityBalanceBefore).toBe(((buyAmounts * royaltyBasisPoints * 51) / (10000 * 100)) - 50000); // 50000 is the fee for the transaction
+		expect(authorityBalanceAfter - authorityBalanceBefore).toBe(((buyAmounts * royaltyBasisPoints * 51) / (10000 * 100)) - feeEstimation);
 		const distributionAccount = await getDistributionAccount(setup.provider, groupMint, PublicKey.default.toString());
 		expect(distributionAccount?.claimData).toBe([]);
 	});

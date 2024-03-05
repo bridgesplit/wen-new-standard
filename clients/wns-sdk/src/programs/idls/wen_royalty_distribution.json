@@ -48,6 +48,11 @@
           "isSigner": true
         },
         {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "distributionAccount",
           "isMut": true,
           "isSigner": false
@@ -240,7 +245,7 @@
       "msg": "Invalid creator pct amount. Must add up to 100"
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "ArithmeticOverflow",
       "msg": "Arithmetic overflow"
     }
