@@ -6,7 +6,7 @@ use anchor_spl::{
         mint_to, set_authority,
         spl_token_2022::{extension::ExtensionType, instruction::AuthorityType},
         token_metadata_initialize, Mint, MintTo, SetAuthority, Token2022, TokenAccount,
-        TokenMetadataInitialize, TokenMetadataInitializeArgs,
+        TokenMetadataInitialize,
     },
 };
 
@@ -73,7 +73,12 @@ pub struct CreateMintAccount<'info> {
 }
 
 impl<'info> CreateMintAccount<'info> {
-    fn initialize_token_metadata(&self, args: TokenMetadataInitializeArgs) -> ProgramResult {
+    fn initialize_token_metadata(
+        &self,
+        name: String,
+        uri: String,
+        symbol: String,
+    ) -> ProgramResult {
         let cpi_accounts = TokenMetadataInitialize {
             token_program_id: self.token_program.to_account_info(),
             mint: self.mint.to_account_info(),
@@ -82,7 +87,7 @@ impl<'info> CreateMintAccount<'info> {
             update_authority: self.authority.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), cpi_accounts);
-        token_metadata_initialize(cpi_ctx, args)?;
+        token_metadata_initialize(cpi_ctx, name, symbol, uri)?;
         Ok(())
     }
 
@@ -113,11 +118,7 @@ impl<'info> CreateMintAccount<'info> {
 pub fn handler(ctx: Context<CreateMintAccount>, args: CreateMintAccountArgs) -> Result<()> {
     // initialize token metadata
     ctx.accounts
-        .initialize_token_metadata(TokenMetadataInitializeArgs {
-            name: args.name,
-            symbol: args.symbol,
-            uri: args.uri,
-        })?;
+        .initialize_token_metadata(args.name, args.symbol, args.uri)?;
 
     // mint to receiver
     ctx.accounts.mint_to_receiver()?;
