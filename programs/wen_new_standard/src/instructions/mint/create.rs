@@ -45,7 +45,6 @@ pub struct CreateMintAccount<'info> {
         mint::decimals = 0,
         mint::authority = authority,
         mint::freeze_authority = manager,
-        mint::extensions = MINT_EXTENSIONS.to_vec(),
         extensions::metadata_pointer::authority = authority.key(),
         extensions::metadata_pointer::metadata_address = mint.key(),
         extensions::group_member_pointer::authority = manager.key(),

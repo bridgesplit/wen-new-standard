@@ -54,14 +54,13 @@ pub struct CreateGroupAccount<'info> {
         mint::decimals = 0,
         mint::authority = authority,
         mint::freeze_authority = manager,
-        mint::extensions = GROUP_EXTENSIONS.to_vec(),
-        extensions::metadata_pointer::authority = authority.key(),
-        extensions::metadata_pointer::metadata_address = mint.key(),
+        extensions::metadata_pointer::authority = authority,
+        extensions::metadata_pointer::metadata_address = mint,
         // group pointer authority is left as the manager so that it can be updated once token group support inside mint is added
-        extensions::group_pointer::authority = manager.key(),
-        extensions::group_pointer::group_address = group.key(),
+        extensions::group_pointer::authority = manager,
+        extensions::group_pointer::group_address = group,
         // temporary mint close authority until a better program accounts can be used
-        extensions::close_authority::authority = manager.key(),
+        extensions::close_authority::authority = manager,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     #[account(
